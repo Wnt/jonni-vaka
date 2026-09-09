@@ -35,6 +35,9 @@ export function createProxy({
       // Remove sensitive headers
       delete originalHeaders.authorization
       delete originalHeaders['x-user']
+      // The service logs this as the forensic identity of the caller, so only the gateway may set
+      // it: a client-supplied one would let a session user attribute their actions to any token
+      delete originalHeaders['x-evaka-api-token-id']
 
       const serviceHeaders = lowercaseHeaderNames(
         createServiceRequestHeaders(srcReq, getUserHeader(srcReq))

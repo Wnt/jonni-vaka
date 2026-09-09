@@ -34,6 +34,7 @@ export type ServiceRequestHeader =
   | 'X-Request-ID'
   | 'EvakaMockedTime'
   | 'X-User'
+  | 'X-Evaka-Api-Token-Id'
 
 export type ServiceRequestHeaders = Partial<
   Record<ServiceRequestHeader, string>
@@ -55,6 +56,10 @@ export function createServiceRequestHeaders(
   const mockedTime = req.get('EvakaMockedTime')
   if (mockedTime) {
     headers.EvakaMockedTime = mockedTime
+  }
+  if (req.citizenApiToken) {
+    // Audit only: never consulted for authorization
+    headers['X-Evaka-Api-Token-Id'] = req.citizenApiToken.tokenId
   }
   return headers
 }
@@ -276,6 +281,36 @@ export async function getCitizenDetails(
     }
   )
   return data
+}
+
+export interface CitizenApiTokenIdentity {
+  personId: UUID
+  tokenId: UUID
+  scopes: string[]
+}
+
+/**
+ * Resolves a raw citizen API token into the citizen it belongs to and the scopes it was granted.
+ * Returns undefined if the token is unknown, expired or revoked.
+ */
+export async function citizenApiTokenLogin(
+  req: express.Request,
+  token: string
+): Promise<CitizenApiTokenIdentity | undefined> {
+  try {
+    const { data } = await client.post<CitizenApiTokenIdentity>(
+      `/system/citizen-api-token-login`,
+      { token },
+      { headers: createServiceRequestHeaders(req, systemUserHeader) }
+    )
+    return data
+  } catch (e: unknown) {
+    if (axios.isAxiosError(e) && e.response?.status === 404) {
+      return undefined
+    } else {
+      throw e
+    }
+  }
 }
 
 export interface ValidatePairingRequest {

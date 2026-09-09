@@ -6,6 +6,10 @@ import cookieParser from 'cookie-parser'
 import express from 'express'
 import expressBasicAuth from 'express-basic-auth'
 
+import {
+  citizenApiTokenAuth,
+  requireCitizenApiTokenScope
+} from './enduser/citizen-api-token.ts'
 import mapRoutes from './enduser/mapRoutes.ts'
 import {
   authPasskeyLoginFinish,
@@ -31,7 +35,7 @@ import {
   refreshMobileSession
 } from './internal/mobile-device-session.ts'
 import { internalAuthStatus } from './internal/routes/auth-status.ts'
-import { integrationUserHeader } from './shared/auth/index.ts'
+import { createUserHeader, integrationUserHeader } from './shared/auth/index.ts'
 import type { Config } from './shared/config.ts'
 import { appCommit, enableDevApi, titaniaConfig } from './shared/config.ts'
 import { assertStringProp, toRequestHandler } from './shared/express.ts'
@@ -103,7 +107,14 @@ export function apiRouter(config: Config, redisClient: RedisClient) {
     )
   )
   const citizenProxy = createProxy({
-    getUserHeader: (req) => citizenSessions.getUserHeader(req)
+    getUserHeader: (req) =>
+      req.citizenApiToken
+        ? createUserHeader({
+            id: req.citizenApiToken.personId,
+            authType: 'citizen-api-token',
+            userType: 'CITIZEN_WEAK'
+          })
+        : citizenSessions.getUserHeader(req)
   })
   const employeeSessions = sessionSupport(
     'employee',
@@ -229,6 +240,7 @@ export function apiRouter(config: Config, redisClient: RedisClient) {
           break
         case 'citizen-weak':
         case 'citizen-passkey':
+        case 'citizen-api-token':
         case 'dev':
         case undefined:
           // no need for special handling
@@ -260,6 +272,7 @@ export function apiRouter(config: Config, redisClient: RedisClient) {
           break
         case 'citizen-weak':
         case 'citizen-passkey':
+        case 'citizen-api-token':
         case 'employee-mobile':
           // should not happen, but we'll still destroy the session normally
           break
@@ -276,6 +289,16 @@ export function apiRouter(config: Config, redisClient: RedisClient) {
   router.use(csrf)
 
   router.use('/citizen', citizenSessions.middleware)
+
+  // Public endpoints are mounted ahead of the bearer-token middleware, so that an integration whose
+  // HTTP client sets a default Authorization header is not answered 403 by the allowlist check on
+  // endpoints that need no authentication at all
+  router.use('/citizen/public/map-api', mapRoutes)
+  router.all('/citizen/public/{*rest}', citizenProxy)
+  // Requests using a session cookie pass through both untouched, and the two are mounted without a
+  // path prefix because they decide from `req.path`, which express rewrites relative to the mount
+  // point.
+  router.use(citizenApiTokenAuth, requireCitizenApiTokenScope)
   router.get('/citizen/auth/status', citizenAuthStatus(citizenSessions))
   router.post(
     '/citizen/auth/weak-login',
@@ -317,13 +340,15 @@ export function apiRouter(config: Config, redisClient: RedisClient) {
     passkeyDelete(redisClient)
   )
   router.all('/citizen/auth/{*rest}', (_, res) => res.redirect('/'))
-  router.use('/citizen/public/map-api', mapRoutes)
-  router.all('/citizen/public/{*rest}', citizenProxy)
-  router.all(
-    '/citizen/{*rest}',
-    citizenSessions.requireAuthentication,
-    citizenProxy
-  )
+  const requireCitizenAuthentication: express.RequestHandler = (
+    req,
+    res,
+    next
+  ) =>
+    req.citizenApiToken
+      ? next()
+      : citizenSessions.requireAuthentication(req, res, next)
+  router.all('/citizen/{*rest}', requireCitizenAuthentication, citizenProxy)
 
   router.use('/employee/', employeeSessions.middleware)
   router.get('/employee/auth/status', internalAuthStatus(employeeSessions))

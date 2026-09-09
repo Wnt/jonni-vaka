@@ -16,6 +16,7 @@ export type CitizenSessionUser =
     }
   | { id: string; authType: 'citizen-weak'; userType: 'CITIZEN_WEAK' }
   | { id: string; authType: 'citizen-passkey'; userType: 'CITIZEN_WEAK' }
+  | { id: string; authType: 'citizen-api-token'; userType: 'CITIZEN_WEAK' }
   | { id: string; authType: 'dev'; userType: 'CITIZEN_STRONG' }
 
 export type EmployeeSessionUser =
