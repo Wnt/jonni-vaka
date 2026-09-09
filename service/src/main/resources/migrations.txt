@@ -605,3 +605,4 @@ V606__koski_upload_error.sql
 V607__decision_reasoning_individual_language.sql
 V608__child_koski_data_removed.sql
 V609__citizen_api_token.sql
+V610__api_token_access_notification_email_type.sql

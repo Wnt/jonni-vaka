@@ -56,7 +56,10 @@ enum class EmailMessageType : DatabaseEnum {
     ATTENDANCE_RESERVATION_NOTIFICATION,
 
     /** Discussion time related notifications */
-    DISCUSSION_TIME_NOTIFICATION;
+    DISCUSSION_TIME_NOTIFICATION,
+
+    /** Notifies a co-guardian that a citizen API token now has access to their shared child */
+    API_TOKEN_ACCESS_NOTIFICATION;
 
     override val sqlType: String = "email_message_type"
 

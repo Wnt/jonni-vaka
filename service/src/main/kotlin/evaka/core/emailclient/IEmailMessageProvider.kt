@@ -153,6 +153,10 @@ interface IEmailMessageProvider {
 
     fun weakCredentialsRemoved(): EmailContent
 
+    /** Sent to a co-guardian when the other guardian creates a citizen API token. */
+    fun apiTokenAccessNotification(childNames: List<HtmlSafe<String>>): EmailContent =
+        ApiTokenAccessNotificationEmailContent.default(childNames)
+
     fun messageDeletionSenderEmail(
         supportEmail: String?,
         data: MessageDeletionEmailData,

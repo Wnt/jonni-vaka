@@ -2420,7 +2420,10 @@ const sv: Translations = {
             <li>påminnelser inför bokade samtalstider</li>
           </ul>
         </div>
-      )
+      ),
+      apiTokenAccess: 'Appnycklar som den andra vårdnadshavaren skapat',
+      apiTokenAccessInfo:
+        'En avisering skickas när ditt barns andra vårdnadshavare skapar en appnyckel som också ser ditt barns uppgifter.'
     }
   },
   income: {

@@ -2429,7 +2429,10 @@ export default {
             <li>muistutuksen ennen varattua keskusteluaikaa</li>
           </ul>
         </div>
-      )
+      ),
+      apiTokenAccess: 'Toisen huoltajan luomista sovellusavaimista',
+      apiTokenAccessInfo:
+        'Ilmoitus lähetetään, kun lapsesi toinen huoltaja luo sovellusavaimen, joka näkee myös lapsesi tiedot.'
     }
   },
   income: {

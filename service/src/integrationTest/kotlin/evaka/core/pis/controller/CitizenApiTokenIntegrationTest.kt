@@ -10,9 +10,11 @@ import evaka.core.pis.controllers.ApiTokenControllerCitizen
 import evaka.core.pis.controllers.MAX_API_TOKENS_PER_CITIZEN
 import evaka.core.pis.controllers.MAX_API_TOKEN_LIFETIME
 import evaka.core.shared.CitizenApiTokenId
+import evaka.core.shared.PersonId
 import evaka.core.shared.apiscopes.CitizenApiScope
 import evaka.core.shared.auth.AuthenticatedUser
 import evaka.core.shared.auth.CitizenAuthLevel
+import evaka.core.shared.dev.DevGuardian
 import evaka.core.shared.dev.DevPerson
 import evaka.core.shared.dev.DevPersonType
 import evaka.core.shared.dev.insert
@@ -24,6 +26,7 @@ import evaka.core.shared.domain.NotFound
 import evaka.core.user.CitizenApiToken
 import java.time.Duration
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import org.junit.jupiter.api.Test
@@ -209,6 +212,63 @@ class CitizenApiTokenIntegrationTest : FullApplicationTest(resetDbBeforeEach = t
     }
 
     @Test
+    fun `creating a token plans an access notification to the co-guardian of a shared child`() {
+        insertPerson()
+        val child = DevPerson()
+        val otherGuardian = DevPerson(ssn = null)
+        db.transaction { tx ->
+            tx.insert(child, DevPersonType.CHILD)
+            tx.insert(otherGuardian, DevPersonType.ADULT)
+            tx.insert(DevGuardian(person.id, child.id))
+            tx.insert(DevGuardian(otherGuardian.id, child.id))
+        }
+
+        createApiToken()
+
+        assertEquals(listOf(otherGuardian.id), getPlannedApiTokenNotificationRecipients())
+    }
+
+    @Test
+    fun `creating a token as a sole guardian plans no access notification`() {
+        insertPerson()
+        val child = DevPerson()
+        db.transaction { tx ->
+            tx.insert(child, DevPersonType.CHILD)
+            tx.insert(DevGuardian(person.id, child.id))
+        }
+
+        createApiToken()
+
+        assertEquals(emptyList(), getPlannedApiTokenNotificationRecipients())
+    }
+
+    @Test
+    fun `creating a token with no children plans no access notification`() {
+        insertPerson()
+
+        createApiToken()
+
+        assertEquals(emptyList(), getPlannedApiTokenNotificationRecipients())
+    }
+
+    @Test
+    fun `the token owner is not among the notified co-guardians`() {
+        insertPerson()
+        val child = DevPerson()
+        val otherGuardian = DevPerson(ssn = null)
+        db.transaction { tx ->
+            tx.insert(child, DevPersonType.CHILD)
+            tx.insert(otherGuardian, DevPersonType.ADULT)
+            tx.insert(DevGuardian(person.id, child.id))
+            tx.insert(DevGuardian(otherGuardian.id, child.id))
+        }
+
+        createApiToken()
+
+        assertFalse(getPlannedApiTokenNotificationRecipients().contains(person.id))
+    }
+
+    @Test
     fun `with the feature toggle off, token login gives NotFound`() {
         insertPerson()
         val created = createApiToken()
@@ -254,5 +314,15 @@ class CitizenApiTokenIntegrationTest : FullApplicationTest(resetDbBeforeEach = t
     private fun getLastUsedAt(id: CitizenApiTokenId): HelsinkiDateTime? = db.read { tx ->
         tx.createQuery { sql("SELECT last_used_at FROM citizen_api_token WHERE id = ${bind(id)}") }
             .exactlyOne<HelsinkiDateTime?>()
+    }
+
+    private fun getPlannedApiTokenNotificationRecipients(): List<PersonId> = db.read { tx ->
+        tx.createQuery {
+                sql(
+                    "SELECT (payload->>'recipientId')::uuid FROM async_job WHERE type = 'SendApiTokenAccessNotificationEmail'"
+                )
+            }
+            .mapTo<PersonId>()
+            .toList()
     }
 }

@@ -2160,7 +2160,10 @@ const en: Translations = {
             <li>reminders about upcoming discussion appointments</li>
           </ul>
         </div>
-      )
+      ),
+      apiTokenAccess: 'Application keys created by the other guardian',
+      apiTokenAccessInfo:
+        "A notification is sent when your child's other guardian creates an application key that also sees your child's information."
     }
   },
   income: {

@@ -17,6 +17,7 @@ import evaka.core.shared.domain.HelsinkiDateTime
 import evaka.core.shared.domain.NotFound
 import evaka.core.shared.security.AccessControl
 import evaka.core.shared.security.Action
+import evaka.core.user.ApiTokenAccessNotificationEmailService
 import evaka.core.user.CitizenApiToken
 import evaka.core.user.countCitizenApiTokens
 import evaka.core.user.generateCitizenApiToken
@@ -49,6 +50,7 @@ val MAX_API_TOKEN_LIFETIME: Duration = Duration.ofDays(180)
 class ApiTokenControllerCitizen(
     private val accessControl: AccessControl,
     private val evakaEnv: EvakaEnv,
+    private val apiTokenAccessNotificationEmailService: ApiTokenAccessNotificationEmailService,
 ) {
     @GetMapping
     fun getApiTokens(
@@ -122,6 +124,7 @@ class ApiTokenControllerCitizen(
                             scopes = body.scopes.distinct().sortedBy { it.name },
                             expiresAt = body.expiresAt,
                         )
+                    apiTokenAccessNotificationEmailService.planNotifications(tx, user.id, now)
                     NewApiTokenResponse(id, token)
                 }
             }

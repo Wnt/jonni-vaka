@@ -494,6 +494,14 @@ sealed interface AsyncJob : AsyncJobPayload {
         override val user: AuthenticatedUser? = null
     }
 
+    /** Sent to a co-guardian when the other guardian creates a citizen API token. */
+    data class SendApiTokenAccessNotificationEmail(
+        val ownerId: PersonId,
+        val recipientId: PersonId,
+    ) : AsyncJob {
+        override val user: AuthenticatedUser? = null
+    }
+
     data class ArchiveDecision(
         val decisionId: DecisionId,
         override val user: AuthenticatedUser? = null,
@@ -573,6 +581,7 @@ sealed interface AsyncJob : AsyncJobPayload {
                 AsyncJobPool.Config(concurrency = 1),
                 setOf(
                     SendAbsenceApplicationDecidedEmail::class,
+                    SendApiTokenAccessNotificationEmail::class,
                     SendApplicationEmail::class,
                     SendCalendarEventDigestEmail::class,
                     SendChildDocumentNotificationEmail::class,

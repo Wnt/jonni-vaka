@@ -33,7 +33,8 @@ const notificationSettingsForm = object({
   document: boolean(),
   informalDocument: boolean(),
   attendanceReservation: boolean(),
-  discussionTime: boolean()
+  discussionTime: boolean(),
+  apiTokenAccess: boolean()
 })
 
 function isEnabled(
@@ -61,6 +62,8 @@ function isEnabled(
       return state.attendanceReservation
     case 'DISCUSSION_TIME_NOTIFICATION':
       return state.discussionTime
+    case 'API_TOKEN_ACCESS_NOTIFICATION':
+      return state.apiTokenAccess
   }
 }
 
@@ -77,7 +80,8 @@ const getInitialState = (
   attendanceReservation: !disabledTypes.includes(
     'ATTENDANCE_RESERVATION_NOTIFICATION'
   ),
-  discussionTime: !disabledTypes.includes('DISCUSSION_TIME_NOTIFICATION')
+  discussionTime: !disabledTypes.includes('DISCUSSION_TIME_NOTIFICATION'),
+  apiTokenAccess: !disabledTypes.includes('API_TOKEN_ACCESS_NOTIFICATION')
 })
 
 const channelColumns = '60px'
@@ -160,7 +164,8 @@ export default React.memo(
       document,
       informalDocument,
       attendanceReservation,
-      discussionTime
+      discussionTime,
+      apiTokenAccess
     } = useFormFields(form)
 
     useEffect(() => {
@@ -207,7 +212,13 @@ export default React.memo(
               info: tn.discussionTimeInfo
             }
           ]
-        : [])
+        : []),
+      {
+        dataQa: 'api-token-access',
+        bind: apiTokenAccess,
+        label: tn.apiTokenAccess,
+        info: tn.apiTokenAccessInfo
+      }
     ]
 
     return (
