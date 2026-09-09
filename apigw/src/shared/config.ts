@@ -79,6 +79,13 @@ const envVariables = {
    * 0 means no limit
    */
   CITIZEN_WEAK_LOGIN_RATE_LIMIT: 20,
+  /**
+   * Rate limit for citizen API token requests per token (requests per minute).
+   *
+   * Optional so that deploying this needs no infrastructure change: unset environments get the
+   * default below. 0 disables the limiter entirely.
+   */
+  CITIZEN_API_TOKEN_RATE_LIMIT: unset<number>(),
 
   // ----- Redis configuration -----
   /**
@@ -382,7 +389,10 @@ function createLocalDevelopmentOverrides(): Partial<EnvVariables> {
 }
 
 export interface Config {
-  citizen: SessionConfig & { weakLoginRateLimit: number }
+  citizen: SessionConfig & {
+    weakLoginRateLimit: number
+    citizenApiTokenRateLimit: number
+  }
   employee: SessionConfig
   ad:
     | { type: 'mock' | 'disabled' }
@@ -613,7 +623,9 @@ export function configFromEnv(): Config {
       weakLoginRateLimit: required(
         'CITIZEN_WEAK_LOGIN_RATE_LIMIT',
         parseInteger
-      )
+      ),
+      citizenApiTokenRateLimit:
+        optional('CITIZEN_API_TOKEN_RATE_LIMIT', parseInteger) ?? 60
     },
     employee: {
       useSecureCookies,

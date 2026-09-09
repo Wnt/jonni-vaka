@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser'
 import express from 'express'
 import expressBasicAuth from 'express-basic-auth'
 
+import { citizenApiTokenRateLimit } from './enduser/citizen-api-token-rate-limit.ts'
 import {
   citizenApiTokenAuth,
   requireCitizenApiTokenScope
@@ -295,10 +296,20 @@ export function apiRouter(config: Config, redisClient: RedisClient) {
   // endpoints that need no authentication at all
   router.use('/citizen/public/map-api', mapRoutes)
   router.all('/citizen/public/{*rest}', citizenProxy)
-  // Requests using a session cookie pass through both untouched, and the two are mounted without a
-  // path prefix because they decide from `req.path`, which express rewrites relative to the mount
-  // point.
-  router.use(citizenApiTokenAuth, requireCitizenApiTokenScope)
+  const { middleware: citizenApiTokenAuthMiddleware } =
+    citizenApiTokenAuth(redisClient)
+  // Requests using a session cookie pass through all three untouched. The rate limiter comes last so
+  // that an unauthenticated flood cannot consume a real token's budget, and the three are mounted
+  // without a path prefix because they decide from `req.path`, which express rewrites relative to
+  // the mount point.
+  router.use(
+    citizenApiTokenAuthMiddleware,
+    requireCitizenApiTokenScope,
+    citizenApiTokenRateLimit(
+      redisClient,
+      config.citizen.citizenApiTokenRateLimit
+    )
+  )
   router.get('/citizen/auth/status', citizenAuthStatus(citizenSessions))
   router.post(
     '/citizen/auth/weak-login',

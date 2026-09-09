@@ -110,6 +110,21 @@ authenticated with JWK-signed JWT:s that contain the user ID. To add an authenti
 use the `createAuthHeaders(user)` function from `shared/auth/index.ts`. The user parameter is the user object
 from a logged in session (available at `req.user`).
 
+### Citizen API tokens
+
+`CITIZEN_API_TOKEN_RATE_LIMIT` sets how many requests a single citizen API token may make per
+minute (default `60`). It is optional, so an environment that never sets it still gets a limit.
+`0` disables the limiter entirely. The limit is per token id, not per citizen, so one citizen's
+several tokens each get their own budget.
+
+During an incident, all bearer-token traffic can be rejected at once — without restarting the
+service and without disabling the endpoints ordinary citizens use in the browser — by setting the
+Valkey key `citizen-api-tokens-disabled` to any value. While it is set, every request
+authenticated with a bearer token gets `503 { error: 'API_TOKENS_DISABLED' }`; cookie-authenticated
+requests are unaffected. The gateway polls this key rather than checking it on every request, so
+the change takes effect within a few seconds, the same way `disabled-endpoints` does. Deleting the
+key restores normal traffic.
+
 ## Security
 
 ### Headers

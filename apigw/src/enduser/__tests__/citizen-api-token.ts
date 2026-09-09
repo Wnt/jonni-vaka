@@ -6,9 +6,12 @@ import http from 'node:http'
 import type { AddressInfo } from 'node:net'
 
 import express from 'express'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
+import { MockRedisClient } from '../../shared/test/mock-redis-client.ts'
 import {
+  citizenApiTokenAuth,
+  type CitizenApiTokenIdentity,
   normalizeRequestPath,
   requiredScope,
   requiredScopeForRequest,
@@ -19,6 +22,12 @@ import {
   citizenApiScopes,
   citizenEndpointScopes
 } from '../generated/citizen-api-scopes.js'
+
+const citizenApiTokenLoginMock = vi.hoisted(() => vi.fn())
+vi.mock('../../shared/service-client.ts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../shared/service-client.ts')>()),
+  citizenApiTokenLogin: citizenApiTokenLoginMock
+}))
 
 const CHILD_ID = '6b0e35d7-1b3d-4a5f-9a1d-6a3f5e1f0c11'
 const THREAD_ID = '9d3a1b52-0f8c-4f1e-9c2a-5c6d7e8f9a01'
@@ -489,5 +498,112 @@ describe('requiredScopeForRequest', () => {
   it('ignores the query string when deciding the scope', async () => {
     const { mounted } = await scopeFor('/citizen/messages/received?page=2')
     expect(mounted).toEqual({ type: 'scope', scope: 'MESSAGES_READ' })
+  })
+})
+
+describe('citizenApiTokenAuth kill switch', () => {
+  // A syntactically valid-looking token, so a test that exercises the switch off path can reach
+  // real token validation instead of being rejected earlier as malformed.
+  const TOKEN = `evaka_pat_${'a'.repeat(43)}`
+
+  function fakeReq(opts: {
+    path?: string
+    authorization?: string
+  }): express.Request {
+    const authorization = opts.authorization
+    return {
+      path: opts.path ?? '/citizen/reservations',
+      header: (name: string) =>
+        name.toLowerCase() === 'authorization' ? authorization : undefined
+    } as unknown as express.Request
+  }
+
+  function fakeRes(): {
+    res: express.Response
+    status: ReturnType<typeof vi.fn>
+    send: ReturnType<typeof vi.fn>
+  } {
+    const send = vi.fn().mockReturnThis()
+    const status = vi.fn().mockReturnThis()
+    const res = { status, send } as unknown as express.Response
+    return { res, status, send }
+  }
+
+  it('rejects a bearer request with 503 while the switch is on', async () => {
+    const redis = new MockRedisClient()
+    await redis.set('citizen-api-tokens-disabled', 'incident-1234')
+    const { middleware, refreshCache, cleanup } = citizenApiTokenAuth(redis)
+    await refreshCache()
+
+    const req = fakeReq({ authorization: `Bearer ${TOKEN}` })
+    const { res, status, send } = fakeRes()
+    const next = vi.fn()
+    await middleware(req, res, next)
+
+    expect(status).toHaveBeenCalledWith(503)
+    expect(send).toHaveBeenCalledWith({ error: 'API_TOKENS_DISABLED' })
+    expect(next).not.toHaveBeenCalled()
+    cleanup()
+  })
+
+  it('leaves a cookie-authenticated request untouched while the switch is on', async () => {
+    const redis = new MockRedisClient()
+    await redis.set('citizen-api-tokens-disabled', 'incident-1234')
+    const { middleware, refreshCache, cleanup } = citizenApiTokenAuth(redis)
+    await refreshCache()
+
+    // No Authorization header at all, exactly like a request authenticated with a session cookie
+    const req = fakeReq({})
+    const { res, status } = fakeRes()
+    const next = vi.fn()
+    await middleware(req, res, next)
+
+    expect(next).toHaveBeenCalledWith()
+    expect(status).not.toHaveBeenCalled()
+    cleanup()
+  })
+
+  it('rejects an upper-case citizen path just the same', async () => {
+    // express routes `/CITIZEN/…` to the citizen proxy, so the token middleware has to recognise
+    // it as a citizen request even though the scope decision below it is case-sensitive
+    const redis = new MockRedisClient()
+    await redis.set('citizen-api-tokens-disabled', 'incident-1234')
+    const { middleware, refreshCache, cleanup } = citizenApiTokenAuth(redis)
+    await refreshCache()
+
+    const req = fakeReq({
+      path: '/CITIZEN/reservations',
+      authorization: `Bearer ${TOKEN}`
+    })
+    const { res, status } = fakeRes()
+    await middleware(req, res, vi.fn())
+
+    expect(status).toHaveBeenCalledWith(503)
+    cleanup()
+  })
+
+  it('validates against the service while the switch is off', async () => {
+    const identity: CitizenApiTokenIdentity = {
+      personId: 'person-1',
+      tokenId: 'token-1',
+      scopes: []
+    }
+    citizenApiTokenLoginMock.mockResolvedValueOnce(identity)
+    const { middleware, refreshCache, cleanup } = citizenApiTokenAuth(
+      new MockRedisClient()
+    )
+    await refreshCache()
+
+    const req = fakeReq({ authorization: `Bearer ${TOKEN}` })
+    const { res, status } = fakeRes()
+    const next = vi.fn()
+    await middleware(req, res, next)
+
+    expect(status).not.toHaveBeenCalled()
+    expect(next).toHaveBeenCalledWith()
+    expect(req.citizenApiToken).toEqual(identity)
+    // Every request asks the service, so revocation and expiry take effect immediately
+    expect(citizenApiTokenLoginMock).toHaveBeenCalledOnce()
+    cleanup()
   })
 })

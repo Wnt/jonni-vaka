@@ -9,7 +9,8 @@ import {
   CITIZEN_API_TOKEN_PATTERN
 } from '../shared/auth/bearer.ts'
 import type { EvakaSessionUser } from '../shared/auth/index.ts'
-import { logAuditEvent, logWarn } from '../shared/logging.ts'
+import { logAuditEvent, logError, logWarn } from '../shared/logging.ts'
+import type { RedisClient } from '../shared/redis-client.ts'
 import { citizenApiTokenLogin } from '../shared/service-client.ts'
 
 import { citizenApiScopeEndpoints } from './generated/citizen-api-scopes.ts'
@@ -128,44 +129,88 @@ function isCitizenApiRequest(req: express.Request): boolean {
 }
 
 /**
+ * Incident control that stops programs without stopping people: while this key is set, every
+ * bearer-token request is rejected and cookie-authenticated citizens are unaffected. The path-based
+ * `endpoint-disabling` switch cannot do that, and the env toggle needs a restart.
+ */
+const API_TOKENS_DISABLED_KEY = 'citizen-api-tokens-disabled'
+const API_TOKENS_DISABLED_REFRESH_INTERVAL_MS = 10_000
+
+/**
  * When a request carries both a token and a session cookie the token wins: it must never be able to
  * borrow the higher trust level of a session that happens to be in the same browser.
  */
-export async function citizenApiTokenAuth(
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction
-): Promise<void> {
-  // Employee and mobile requests keep whatever authentication they already had, rather than being
-  // answered as some citizen
-  if (!isCitizenApiRequest(req)) return next()
+export const citizenApiTokenAuth = (redis: RedisClient) => {
+  let tokensDisabled = false
 
-  const token = bearerToken(req)
-  if (!token) return next()
-
-  if (!CITIZEN_API_TOKEN_PATTERN.test(token)) {
-    res.status(401).send({ error: 'INVALID_TOKEN' })
-    return
+  async function refreshCache() {
+    try {
+      tokensDisabled = (await redis.get(API_TOKENS_DISABLED_KEY)) !== null
+    } catch (error) {
+      logError(
+        `Failed to refresh citizen-api-tokens-disabled cache: ${error instanceof Error ? error.message : String(error)}`
+      )
+    }
   }
 
-  try {
-    const identity = await citizenApiTokenLogin(req, token)
-    if (!identity) {
-      logAuditEvent(eventCode('auth_failed'), req, 'Unknown or expired token')
+  const interval = setInterval(
+    () => void refreshCache(),
+    API_TOKENS_DISABLED_REFRESH_INTERVAL_MS
+  )
+  interval.unref()
+
+  void refreshCache()
+
+  async function citizenApiTokenAuthMiddleware(
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ): Promise<void> {
+    // Employee and mobile requests keep whatever authentication they already had, rather than
+    // being answered as some citizen
+    if (!isCitizenApiRequest(req)) return next()
+
+    const token = bearerToken(req)
+    if (!token) return next()
+
+    if (tokensDisabled) {
+      logWarn('Citizen API token traffic disabled by incident control', req, {
+        eventCode: eventCode('tokens_disabled')
+      })
+      res.status(503).send({ error: 'API_TOKENS_DISABLED' })
+      return
+    }
+
+    if (!CITIZEN_API_TOKEN_PATTERN.test(token)) {
       res.status(401).send({ error: 'INVALID_TOKEN' })
       return
     }
 
-    const user: EvakaSessionUser = {
-      id: identity.personId,
-      authType: 'citizen-api-token',
-      userType: 'CITIZEN_WEAK'
+    try {
+      const identity = await citizenApiTokenLogin(req, token)
+      if (!identity) {
+        logAuditEvent(eventCode('auth_failed'), req, 'Unknown or expired token')
+        res.status(401).send({ error: 'INVALID_TOKEN' })
+        return
+      }
+
+      const user: EvakaSessionUser = {
+        id: identity.personId,
+        authType: 'citizen-api-token',
+        userType: 'CITIZEN_WEAK'
+      }
+      req.user = user
+      req.citizenApiToken = identity
+      next()
+    } catch (err) {
+      next(err)
     }
-    req.user = user
-    req.citizenApiToken = identity
-    next()
-  } catch (err) {
-    next(err)
+  }
+
+  return {
+    middleware: citizenApiTokenAuthMiddleware,
+    refreshCache,
+    cleanup: () => clearInterval(interval)
   }
 }
 
