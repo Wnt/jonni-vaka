@@ -572,7 +572,12 @@ sealed interface Action {
             READ_PASSKEYS(IsCitizen(allowWeakLogin = true).self()),
             ADD_PASSKEY(IsCitizen(allowWeakLogin = false).self()),
             DELETE_PASSKEY(IsCitizen(allowWeakLogin = false).self()),
-            UPDATE_PASSKEY_NAME(IsCitizen(allowWeakLogin = false).self());
+            UPDATE_PASSKEY_NAME(IsCitizen(allowWeakLogin = false).self()),
+            // Managing API tokens requires strong authentication: a weak login, and therefore a
+            // token itself, must never be able to mint or widen a token.
+            READ_API_TOKENS(IsCitizen(allowWeakLogin = false).self()),
+            CREATE_API_TOKEN(IsCitizen(allowWeakLogin = false).self()),
+            REVOKE_API_TOKEN(IsCitizen(allowWeakLogin = false).self());
 
             override fun toString(): String = "${javaClass.name}.$name"
         }

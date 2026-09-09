@@ -49,6 +49,27 @@ export type ChildImageId = Id<'ChildImage'>
 export type ChildStickyNoteId = Id<'ChildStickyNote'>
 
 /**
+* Generated from evaka.core.shared.apiscopes.CitizenApiScope
+*/
+export const citizenApiScopes = [
+  'PERSONAL_DATA_READ',
+  'CHILDREN_READ',
+  'CALENDAR_READ',
+  'RESERVATIONS_READ',
+  'ABSENCES_READ',
+  'HOLIDAY_PERIODS_READ',
+  'NOTIFICATIONS_READ',
+  'NOTIFICATIONS_DISMISS',
+  'MESSAGES_READ',
+  'MESSAGES_MARK_READ',
+  'ATTACHMENTS_READ'
+] as const
+
+export type CitizenApiScope = typeof citizenApiScopes[number]
+
+export type CitizenApiTokenId = Id<'CitizenApiToken'>
+
+/**
 * Generated from evaka.core.shared.auth.CitizenAuthLevel
 */
 export type CitizenAuthLevel =

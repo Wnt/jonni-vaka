@@ -156,6 +156,9 @@ export const citizenEndpointScopes: readonly {
   },
   { method: 'DELETE', path: '/citizen/absence-application/{id}', scope: null },
   { method: 'POST', path: '/citizen/absences', scope: null },
+  { method: 'GET', path: '/citizen/api-tokens', scope: null },
+  { method: 'POST', path: '/citizen/api-tokens', scope: null },
+  { method: 'DELETE', path: '/citizen/api-tokens/{id}', scope: null },
   { method: 'POST', path: '/citizen/applications', scope: null },
   {
     method: 'GET',

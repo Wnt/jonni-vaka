@@ -65,6 +65,7 @@ data class EvakaEnv(
     val staffAttendanceDriftMinutes: Duration,
     val decisionReasoningGenericRemovalEnabled: Boolean,
     val decisionReasoningEnabled: Boolean,
+    val citizenApiTokensEnabled: Boolean,
 ) {
     companion object {
         fun fromEnvironment(env: Environment): EvakaEnv {
@@ -129,6 +130,7 @@ data class EvakaEnv(
                 decisionReasoningGenericRemovalEnabled =
                     env.lookup("evaka.decision_reasoning.generic_removal_enabled") ?: false,
                 decisionReasoningEnabled = env.lookup("evaka.decision_reasoning.enabled") ?: false,
+                citizenApiTokensEnabled = env.lookup("evaka.citizen_api_tokens.enabled") ?: false,
             )
         }
     }

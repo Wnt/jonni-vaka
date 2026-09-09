@@ -9,6 +9,8 @@ evaka:
     decisions: evaka-daycaredecisions-it
     fee_decisions: evaka-paymentdecisions-it
     voucher_value_decisions: evaka-vouchervaluedecisions-it
+  citizen_api_tokens:
+    enabled: true
   clock:
     mock: true
   decision_reasoning:

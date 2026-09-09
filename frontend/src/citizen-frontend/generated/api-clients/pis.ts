@@ -4,6 +4,9 @@
 
 // GENERATED FILE: no manual modifications
 
+import type { ApiTokenRequest } from 'lib-common/generated/api-types/pis'
+import type { CitizenApiToken } from 'lib-common/generated/api-types/user'
+import type { CitizenApiTokenId } from 'lib-common/generated/api-types/shared'
 import type { CitizenPasskey } from 'lib-common/generated/api-types/user'
 import type { CitizenPasskeyId } from 'lib-common/generated/api-types/shared'
 import type { EmailMessageType } from 'lib-common/generated/api-types/pis'
@@ -13,6 +16,7 @@ import type { FamilyMembers } from 'lib-common/generated/api-types/pis'
 import type { FinishPasskeyRegistrationRequest } from 'lib-common/generated/api-types/pis'
 import type { JsonCompatible } from 'lib-common/json'
 import type { JsonOf } from 'lib-common/json'
+import type { NewApiTokenResponse } from 'lib-common/generated/api-types/pis'
 import type { PasskeyRegistrationOptions } from 'lib-common/generated/api-types/pis'
 import type { PasswordConstraints } from 'lib-common/generated/api-types/shared'
 import type { PersonalDataUpdate } from 'lib-common/generated/api-types/pis'
@@ -20,9 +24,55 @@ import type { UpdatePasskeyNameRequest } from 'lib-common/generated/api-types/pi
 import type { UpdatePreferredUiLanguageRequest } from 'lib-common/generated/api-types/pis'
 import type { UpdateWeakLoginCredentialsRequest } from 'lib-common/generated/api-types/pis'
 import { client } from '../../api-client'
+import { deserializeJsonCitizenApiToken } from 'lib-common/generated/api-types/user'
 import { deserializeJsonCitizenPasskey } from 'lib-common/generated/api-types/user'
 import { deserializeJsonEmailVerificationStatusResponse } from 'lib-common/generated/api-types/pis'
 import { uri } from 'lib-common/uri'
+
+
+/**
+* Generated from evaka.core.pis.controllers.ApiTokenControllerCitizen.createApiToken
+*/
+export async function createApiToken(
+  request: {
+    body: ApiTokenRequest
+  }
+): Promise<NewApiTokenResponse> {
+  const { data: json } = await client.request<JsonOf<NewApiTokenResponse>>({
+    url: uri`/citizen/api-tokens`.toString(),
+    method: 'POST',
+    data: request.body satisfies JsonCompatible<ApiTokenRequest>
+  })
+  return json
+}
+
+
+/**
+* Generated from evaka.core.pis.controllers.ApiTokenControllerCitizen.getApiTokens
+*/
+export async function getApiTokens(): Promise<CitizenApiToken[]> {
+  const { data: json } = await client.request<JsonOf<CitizenApiToken[]>>({
+    url: uri`/citizen/api-tokens`.toString(),
+    method: 'GET'
+  })
+  return json.map(e => deserializeJsonCitizenApiToken(e))
+}
+
+
+/**
+* Generated from evaka.core.pis.controllers.ApiTokenControllerCitizen.revokeApiToken
+*/
+export async function revokeApiToken(
+  request: {
+    id: CitizenApiTokenId
+  }
+): Promise<void> {
+  const { data: json } = await client.request<JsonOf<void>>({
+    url: uri`/citizen/api-tokens/${request.id}`.toString(),
+    method: 'DELETE'
+  })
+  return json
+}
 
 
 /**

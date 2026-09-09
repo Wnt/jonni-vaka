@@ -7,6 +7,8 @@
 import type { Action } from '../action'
 import type { ApplicationId } from './shared'
 import type { ApplicationType } from './application'
+import type { CitizenApiScope } from './shared'
+import type { CitizenApiTokenId } from './shared'
 import type { CitizenAuthLevel } from './shared'
 import type { CitizenFeatures } from './shared'
 import DateRange from '../../date-range'
@@ -38,6 +40,15 @@ import type { UserRole } from './shared'
 */
 export interface AddSsnRequest {
   ssn: string
+}
+
+/**
+* Generated from evaka.core.pis.controllers.ApiTokenControllerCitizen.ApiTokenRequest
+*/
+export interface ApiTokenRequest {
+  expiresAt: HelsinkiDateTime
+  name: string
+  scopes: CitizenApiScope[]
 }
 
 /**
@@ -450,6 +461,14 @@ export type ModifySource =
   | 'DVV'
 
 /**
+* Generated from evaka.core.pis.controllers.ApiTokenControllerCitizen.NewApiTokenResponse
+*/
+export interface NewApiTokenResponse {
+  id: CitizenApiTokenId
+  token: string
+}
+
+/**
 * Generated from evaka.core.pis.NewSsnEmployee
 */
 export interface NewSsnEmployee {
@@ -830,6 +849,14 @@ export interface UpsertEmployeeDaycareRolesRequest {
   endDate: LocalDate | null
   role: UserRole
   startDate: LocalDate
+}
+
+
+export function deserializeJsonApiTokenRequest(json: JsonOf<ApiTokenRequest>): ApiTokenRequest {
+  return {
+    ...json,
+    expiresAt: HelsinkiDateTime.parseIso(json.expiresAt)
+  }
 }
 
 

@@ -213,6 +213,31 @@ class SystemController(
         }
     }
 
+    data class CitizenApiTokenLoginRequest(val token: String)
+
+    /**
+     * Resolves a raw citizen API token for the api-gw, which enforces the scopes. A token
+     * authenticates as the same weakly authenticated citizen that an email + password login
+     * produces, so nothing downstream needs to know it was used.
+     */
+    @PostMapping("/system/citizen-api-token-login")
+    fun citizenApiTokenLogin(
+        db: Database,
+        user: AuthenticatedUser.SystemInternalUser,
+        clock: EvakaClock,
+        @RequestBody request: CitizenApiTokenLoginRequest,
+    ): CitizenApiTokenIdentity {
+        // Checked on every login, not just on creation, so that turning the toggle off also stops
+        // existing tokens: the api-gw calls this on every token request
+        if (!env.citizenApiTokensEnabled) throw NotFound()
+        return db.connect { dbc ->
+            dbc.transaction { tx ->
+                tx.useCitizenApiToken(hashCitizenApiToken(request.token), clock.now())
+                    ?: throw NotFound()
+            }
+        }
+    }
+
     @GetMapping("/system/citizen/{id}")
     fun citizenUser(
         db: Database,
