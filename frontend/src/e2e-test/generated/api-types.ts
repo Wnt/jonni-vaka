@@ -28,6 +28,7 @@ import type { ChildDocumentDecisionStatus } from 'lib-common/generated/api-types
 import type { ChildDocumentId } from 'lib-common/generated/api-types/shared'
 import type { ChildDocumentType } from 'lib-common/generated/api-types/document'
 import type { ChildWithDateOfBirth } from 'lib-common/generated/api-types/invoicing'
+import type { CitizenApiScope } from 'lib-common/generated/api-types/shared'
 import type { ClubTermId } from 'lib-common/generated/api-types/shared'
 import type { Coordinate } from 'lib-common/generated/api-types/shared'
 import type { DailyServiceTimeId } from 'lib-common/generated/api-types/shared'
@@ -422,6 +423,16 @@ export interface DevChildDocumentPublishedVersion {
   documentKey: string | null
   publishedContent: DocumentContent
   versionNumber: number
+}
+
+/**
+* Generated from evaka.core.shared.dev.DevApi.DevCitizenApiTokenRequest
+*/
+export interface DevCitizenApiTokenRequest {
+  expiresAt: HelsinkiDateTime
+  name: string
+  scopes: CitizenApiScope[]
+  token: string
 }
 
 /**
@@ -1393,6 +1404,14 @@ export function deserializeJsonDevChildDocumentPublishedVersion(json: JsonOf<Dev
     ...json,
     createdAt: HelsinkiDateTime.parseIso(json.createdAt),
     publishedContent: deserializeJsonDocumentContent(json.publishedContent)
+  }
+}
+
+
+export function deserializeJsonDevCitizenApiTokenRequest(json: JsonOf<DevCitizenApiTokenRequest>): DevCitizenApiTokenRequest {
+  return {
+    ...json,
+    expiresAt: HelsinkiDateTime.parseIso(json.expiresAt)
   }
 }
 

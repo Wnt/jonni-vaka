@@ -151,6 +151,7 @@ import evaka.core.sficlient.MockSfiMessagesClient
 import evaka.core.sficlient.SfiMessage
 import evaka.core.sficlient.rest.EventType
 import evaka.core.shared.*
+import evaka.core.shared.apiscopes.CitizenApiScope
 import evaka.core.shared.async.AsyncJobRunner
 import evaka.core.shared.auth.*
 import evaka.core.shared.data.DateSet
@@ -174,8 +175,11 @@ import evaka.core.specialdiet.resetSpecialDietsNotContainedWithin
 import evaka.core.specialdiet.setSpecialDiets
 import evaka.core.user.EvakaUser
 import evaka.core.user.EvakaUserType
+import evaka.core.user.hashCitizenApiToken
+import evaka.core.user.insertCitizenApiToken
 import evaka.core.user.updateLastStrongLogin
 import evaka.core.user.updateWeakLoginCredentials
+import evaka.core.user.upsertCitizenUserForApiToken
 import evaka.core.vtjclient.service.persondetails.DummyIdpPersonDetailsService
 import evaka.core.webpush.PushNotificationCategory
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -1756,6 +1760,31 @@ UPDATE person SET email=${bind(body.email)} WHERE id=${bind(body.personId)}
                 tx.updateLastStrongLogin(clock.now(), id)
                 val _ = tx.updateWeakLoginCredentials(clock.now(), id, request.username, password)
             }
+        }
+    }
+
+    data class DevCitizenApiTokenRequest(
+        val name: String,
+        val token: String,
+        val scopes: List<CitizenApiScope>,
+        val expiresAt: HelsinkiDateTime,
+    )
+
+    @PostMapping("/citizen/{id}/api-token")
+    fun createCitizenApiToken(
+        db: Database,
+        @PathVariable id: PersonId,
+        @RequestBody request: DevCitizenApiTokenRequest,
+    ): CitizenApiTokenId = db.connect { dbc ->
+        dbc.transaction { tx ->
+            tx.upsertCitizenUserForApiToken(id)
+            tx.insertCitizenApiToken(
+                person = id,
+                name = request.name,
+                tokenHash = hashCitizenApiToken(request.token),
+                scopes = request.scopes,
+                expiresAt = request.expiresAt,
+            )
         }
     }
 

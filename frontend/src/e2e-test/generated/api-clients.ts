@@ -20,6 +20,7 @@ import type { ChildDailyNoteId } from 'lib-common/generated/api-types/shared'
 import type { ChildDocumentId } from 'lib-common/generated/api-types/shared'
 import type { ChildStickyNoteBody } from 'lib-common/generated/api-types/note'
 import type { ChildStickyNoteId } from 'lib-common/generated/api-types/shared'
+import type { CitizenApiTokenId } from 'lib-common/generated/api-types/shared'
 import type { DailyReservationRequest } from 'lib-common/generated/api-types/reservations'
 import type { DailyServiceTimeId } from 'lib-common/generated/api-types/shared'
 import type { DailyServiceTimeNotificationId } from 'lib-common/generated/api-types/shared'
@@ -44,6 +45,7 @@ import type { DevCareArea } from './api-types'
 import type { DevChild } from './api-types'
 import type { DevChildAttendance } from './api-types'
 import type { DevChildDocument } from './api-types'
+import type { DevCitizenApiTokenRequest } from './api-types'
 import type { DevClubTerm } from './api-types'
 import type { DevDailyServiceTimeNotification } from './api-types'
 import type { DevDailyServiceTimes } from './api-types'
@@ -636,6 +638,28 @@ export async function createChildren(
       url: uri`/children`.toString(),
       method: 'POST',
       data: request.body satisfies JsonCompatible<DevChild[]>
+    })
+    return json
+  } catch (e) {
+    throw new DevApiError(e)
+  }
+}
+
+
+/**
+* Generated from evaka.core.shared.dev.DevApi.createCitizenApiToken
+*/
+export async function createCitizenApiToken(
+  request: {
+    id: PersonId,
+    body: DevCitizenApiTokenRequest
+  }
+): Promise<CitizenApiTokenId> {
+  try {
+    const { data: json } = await devClient.request<JsonOf<CitizenApiTokenId>>({
+      url: uri`/citizen/${request.id}/api-token`.toString(),
+      method: 'POST',
+      data: request.body satisfies JsonCompatible<DevCitizenApiTokenRequest>
     })
     return json
   } catch (e) {

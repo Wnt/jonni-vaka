@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
+import type { CitizenApiScope } from 'lib-common/generated/api-types/shared'
+
 import { expect } from '../../playwright'
 import type { Page } from '../../utils/page'
 import { Checkbox, Element, Select, TextInput } from '../../utils/page'
@@ -14,6 +16,7 @@ export default class CitizenPersonalDetails {
   familySizeSection: FamilySizeSection
   addEmailTask: Element
   passkeysSection: PasskeysSection
+  apiTokensSection: ApiTokensSection
   verifyEmailTask: Element
   addPhoneTask: Element
   addWeakLoginTask: Element
@@ -37,6 +40,9 @@ export default class CitizenPersonalDetails {
     this.addEmailTask = page.findByDataQa('task-add-email')
     this.passkeysSection = new PasskeysSection(
       page.findByDataQa('passkeys-section')
+    )
+    this.apiTokensSection = new ApiTokensSection(
+      page.findByDataQa('api-tokens-section')
     )
     this.verifyEmailTask = page.findByDataQa('task-verify-email')
     this.addPhoneTask = page.findByDataQa('task-add-phone')
@@ -173,6 +179,67 @@ export class DeletePasskeyModal extends Element {
 
   constructor(page: Page) {
     super(page.findByDataQa('delete-passkey-modal'))
+    this.ok = this.findByDataQa('modal-okBtn')
+  }
+}
+
+export class ApiTokensSection extends Element {
+  loginPrompt = this.findByDataQa('api-tokens-login')
+  createToken = this.findByDataQa('create-api-token')
+  tokens = this.findAllByDataQa('api-token')
+
+  tokenName(nth: number) {
+    return this.tokens.nth(nth).findByDataQa('api-token-name')
+  }
+
+  revokeToken(nth: number) {
+    return this.tokens.nth(nth).findByDataQa('revoke-api-token')
+  }
+}
+
+export class CreateApiTokenModal extends Element {
+  name: TextInput
+  expiry: Select
+  selectAllReadScopes: Element
+  ok: Element
+  cancel: Element
+
+  constructor(page: Page) {
+    super(page.findByDataQa('create-api-token-modal'))
+    this.name = new TextInput(this.findByDataQa('api-token-name-input'))
+    this.expiry = new Select(this.findByDataQa('api-token-expiry-select'))
+    this.selectAllReadScopes = this.findByDataQa('select-all-read-scopes')
+    this.ok = this.findByDataQa('modal-okBtn')
+    this.cancel = this.findByDataQa('modal-cancelBtn')
+  }
+
+  // One checkbox per grantable scope, keyed by the scope constant (e.g. "PERSONAL_DATA_READ")
+  scope(scope: CitizenApiScope): Checkbox {
+    return new Checkbox(this.findByDataQa(`scope-${scope}`))
+  }
+
+  // One button per preset in ApiTokensSection.tsx, keyed by its key (e.g. "calendar")
+  preset(key: string): Element {
+    return this.findByDataQa(`preset-${key}`)
+  }
+}
+
+export class CreatedApiTokenModal extends Element {
+  token: TextInput
+  close: Element
+
+  constructor(page: Page) {
+    super(page.findByDataQa('created-api-token-modal'))
+    this.token = new TextInput(this.findByDataQa('created-api-token'))
+    this.close = this.findByDataQa('close-created-api-token')
+  }
+}
+
+export class RevokeApiTokenModal extends Element {
+  ok: Element
+
+  constructor(page: Page) {
+    super(page.findByDataQa('revoke-api-token-modal'))
     this.ok = this.findByDataQa('modal-okBtn')
   }
 }
