@@ -9,10 +9,12 @@ import evaka.codegen.actionenum.generateActionEnumTypes
 import evaka.codegen.api.TsFile
 import evaka.codegen.api.TsProject
 import evaka.codegen.api.generateApiFiles
+import evaka.codegen.apiscopes.generateCitizenApiScopes
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.absolute
+import kotlin.io.path.createDirectories
 import kotlin.io.path.createDirectory
 import kotlin.io.path.div
 import kotlin.io.path.exists
@@ -51,6 +53,10 @@ fun generate() {
         val path = absolutePath(srcPath, file)
         path.writeText(content)
     }
+
+    val scopesPath = locateCitizenApiScopesFile()
+    scopesPath.parent.createDirectories()
+    scopesPath.writeText(generateCitizenApiScopes())
 }
 
 fun check() {
@@ -72,6 +78,25 @@ fun check() {
             exitProcess(1)
         }
     }
+
+    val scopesPath = locateCitizenApiScopesFile()
+    if (!scopesPath.exists() || scopesPath.readText() != generateCitizenApiScopes()) {
+        logger.error { "Generated citizen API scopes were not up to date ($scopesPath)" }
+        exitProcess(1)
+    }
+    logger.info { "Generated citizen API scopes up to date ($scopesPath)" }
+}
+
+/**
+ * The api-gw is the only enforcement point for citizen API token scopes, so the generated scope
+ * catalogue lives there.
+ */
+private fun locateCitizenApiScopesFile(): Path {
+    // the working directory is expected to be the "service" directory
+    val workingDir = Path("")
+    return (workingDir / "../apigw/src/enduser/generated/citizen-api-scopes.ts")
+        .absolute()
+        .normalize()
 }
 
 private fun locateFrontendSrcDirectory(): Path {
