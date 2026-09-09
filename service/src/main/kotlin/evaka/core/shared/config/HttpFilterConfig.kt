@@ -57,6 +57,18 @@ class HttpFilterConfig {
             order = -8
         }
 
+    /**
+     * Runs after [httpAccessControl], so that a request that is not authenticated at all is
+     * answered as unauthenticated rather than as an over-reaching token.
+     */
+    @Bean
+    fun citizenApiTokenAccessControl() =
+        FilterRegistrationBean(CitizenApiTokenAccessControl()).apply {
+            setName("citizenApiTokenAccessControl")
+            urlPatterns = listOf("/*")
+            order = -7
+        }
+
     class HttpAccessControl(env: Environment) : HttpFilter() {
         private val devApiEnabled = env.activeProfiles.contains("enable_dev_api")
         private val mockIntegrationEnabled =

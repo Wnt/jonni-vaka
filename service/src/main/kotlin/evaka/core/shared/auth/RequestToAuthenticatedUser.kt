@@ -40,6 +40,8 @@ class RequestToAuthenticatedUser(private val tracer: Tracer) : HttpFilter() {
                 Span.current().setAttribute(Tracing.enduserIdHash, user.rawIdHash)
                 MdcKey.USER_ID.set(user.rawId().toString())
                 MdcKey.USER_ID_HASH.set(user.rawIdHash.toString())
+                // Recorded for audit only: authorization is decided entirely by X-User
+                request.getHeader("X-Evaka-Api-Token-Id")?.let { MdcKey.API_TOKEN_ID.set(it) }
                 (user as? AuthenticatedUser.MobileDevice)?.employeeIdHash?.let { employeeIdHash ->
                     MdcKey.SECONDARY_USER_ID_HASH.set(employeeIdHash.toString())
                 }
@@ -58,6 +60,7 @@ class RequestToAuthenticatedUser(private val tracer: Tracer) : HttpFilter() {
         try {
             chain.doFilter(request, response)
         } finally {
+            MdcKey.API_TOKEN_ID.unset()
             MdcKey.USER_ROLES.unset()
             MdcKey.SECONDARY_USER_ID_HASH.unset()
             MdcKey.USER_ID_HASH.unset()
