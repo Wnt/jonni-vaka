@@ -57,6 +57,7 @@ import evaka.core.shared.db.Database
 import evaka.core.shared.db.runSanityChecks
 import evaka.core.shared.domain.EvakaClock
 import evaka.core.titania.cleanTitaniaErrors
+import evaka.core.user.deleteOldCitizenApiTokens
 import evaka.core.varda.VardaUpdateService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.trace.Tracer
@@ -327,6 +328,10 @@ enum class ScheduledJob(
         ScheduledJobs::deleteOldDailyServiceTimeNotifications,
         ScheduledJobSettings(enabled = true, schedule = JobSchedule.nightly()),
     ),
+    DeleteOldCitizenApiTokens(
+        ScheduledJobs::deleteOldCitizenApiTokens,
+        ScheduledJobSettings(enabled = true, schedule = JobSchedule.nightly()),
+    ),
 }
 
 private val logger = KotlinLogging.logger {}
@@ -552,6 +557,13 @@ WHERE id IN (SELECT id FROM attendances_to_end)
         db.transaction { tx ->
             val count = tx.deleteOldDailyServiceTimeNotifications(clock.now())
             logger.info { "Deleted $count old daily service time notifications" }
+        }
+    }
+
+    fun deleteOldCitizenApiTokens(db: Database.Connection, clock: EvakaClock) {
+        db.transaction { tx ->
+            val count = tx.deleteOldCitizenApiTokens(clock.now())
+            logger.info { "Deleted $count old citizen API tokens" }
         }
     }
 

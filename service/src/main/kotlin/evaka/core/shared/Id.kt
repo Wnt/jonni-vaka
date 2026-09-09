@@ -58,6 +58,8 @@ sealed interface DatabaseTable {
 
     sealed class ChildStickyNote : DatabaseTable
 
+    sealed class CitizenApiToken : DatabaseTable
+
     sealed class CitizenPasskey : DatabaseTable
 
     sealed class ClubTerm : DatabaseTable
@@ -242,6 +244,8 @@ typealias ChildId = Id<DatabaseTable.Person>
 typealias ChildImageId = Id<DatabaseTable.ChildImage>
 
 typealias ChildStickyNoteId = Id<DatabaseTable.ChildStickyNote>
+
+typealias CitizenApiTokenId = Id<DatabaseTable.CitizenApiToken>
 
 typealias CitizenPasskeyId = Id<DatabaseTable.CitizenPasskey>
 

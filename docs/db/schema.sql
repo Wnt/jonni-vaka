@@ -2456,6 +2456,22 @@ CREATE TABLE public.child_sticky_note (
     updated timestamp with time zone GENERATED ALWAYS AS (updated_at) STORED
 );
 
+-- Name: citizen_api_token; Type: TABLE; Schema: public
+
+CREATE TABLE public.citizen_api_token (
+    id uuid DEFAULT ext.uuid_generate_v1mc() NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    citizen_user_id uuid NOT NULL,
+    name text NOT NULL,
+    token_hash bytea NOT NULL,
+    scopes text[] NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    last_used_at timestamp with time zone,
+    revoked_at timestamp with time zone,
+    CONSTRAINT "check$citizen_api_token_scopes_not_empty" CHECK ((cardinality(scopes) > 0))
+);
+
 -- Name: citizen_passkey; Type: TABLE; Schema: public
 
 CREATE TABLE public.citizen_passkey (
@@ -4301,6 +4317,11 @@ ALTER TABLE ONLY public.child
 ALTER TABLE ONLY public.child_sticky_note
     ADD CONSTRAINT child_sticky_note_pkey PRIMARY KEY (id);
 
+-- Name: citizen_api_token citizen_api_token_pkey; Type: CONSTRAINT; Schema: public
+
+ALTER TABLE ONLY public.citizen_api_token
+    ADD CONSTRAINT citizen_api_token_pkey PRIMARY KEY (id);
+
 -- Name: citizen_passkey citizen_passkey_pkey; Type: CONSTRAINT; Schema: public
 
 ALTER TABLE ONLY public.citizen_passkey
@@ -4966,6 +4987,11 @@ ALTER TABLE ONLY public.absence
 ALTER TABLE ONLY public.care_area
     ADD CONSTRAINT "uniq$care_area_name" UNIQUE (name);
 
+-- Name: citizen_api_token uniq$citizen_api_token_hash; Type: CONSTRAINT; Schema: public
+
+ALTER TABLE ONLY public.citizen_api_token
+    ADD CONSTRAINT "uniq$citizen_api_token_hash" UNIQUE (token_hash);
+
 -- Name: citizen_passkey uniq$citizen_passkey_credential_id; Type: CONSTRAINT; Schema: public
 
 ALTER TABLE ONLY public.citizen_passkey
@@ -5622,6 +5648,10 @@ CREATE INDEX "idx$child_sticky_note_child_id" ON public.child_sticky_note USING 
 -- Name: idx$child_sticky_note_expires; Type: INDEX; Schema: public
 
 CREATE INDEX "idx$child_sticky_note_expires" ON public.child_sticky_note USING btree (expires);
+
+-- Name: idx$citizen_api_token_citizen_user_id; Type: INDEX; Schema: public
+
+CREATE INDEX "idx$citizen_api_token_citizen_user_id" ON public.citizen_api_token USING btree (citizen_user_id);
 
 -- Name: idx$citizen_passkey_citizen_user_id; Type: INDEX; Schema: public
 
@@ -6471,6 +6501,10 @@ CREATE TRIGGER set_timestamp BEFORE UPDATE ON public.child_images FOR EACH ROW E
 
 CREATE TRIGGER set_timestamp BEFORE UPDATE ON public.child_sticky_note FOR EACH ROW EXECUTE FUNCTION public.trigger_refresh_updated_at();
 
+-- Name: citizen_api_token set_timestamp; Type: TRIGGER; Schema: public
+
+CREATE TRIGGER set_timestamp BEFORE UPDATE ON public.citizen_api_token FOR EACH ROW EXECUTE FUNCTION public.trigger_refresh_updated_at();
+
 -- Name: citizen_passkey set_timestamp; Type: TRIGGER; Schema: public
 
 CREATE TRIGGER set_timestamp BEFORE UPDATE ON public.citizen_passkey FOR EACH ROW EXECUTE FUNCTION public.trigger_refresh_updated_at();
@@ -7287,6 +7321,11 @@ ALTER TABLE ONLY public.child
 
 ALTER TABLE ONLY public.evaka_user
     ADD CONSTRAINT "fk$citizen" FOREIGN KEY (citizen_id) REFERENCES public.person(id) ON DELETE SET NULL;
+
+-- Name: citizen_api_token fk$citizen_user; Type: FK CONSTRAINT; Schema: public
+
+ALTER TABLE ONLY public.citizen_api_token
+    ADD CONSTRAINT "fk$citizen_user" FOREIGN KEY (citizen_user_id) REFERENCES public.citizen_user(id) ON DELETE CASCADE;
 
 -- Name: citizen_passkey fk$citizen_user; Type: FK CONSTRAINT; Schema: public
 
