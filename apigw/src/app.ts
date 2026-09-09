@@ -20,6 +20,7 @@ import { citizenAuthStatus } from './enduser/routes/auth-status.ts'
 import { authWeakDeleteCredentials } from './enduser/routes/auth-weak-delete-credentials.ts'
 import { authWeakLogin } from './enduser/routes/auth-weak-login.ts'
 import { authWeakUpdateCredentials } from './enduser/routes/auth-weak-update-credentials.ts'
+import { citizenApiManifest } from './enduser/routes/citizen-api-manifest.ts'
 import { passkeyDelete } from './enduser/routes/passkey-delete.ts'
 import {
   createCitizenSuomiFiIntegration,
@@ -288,6 +289,10 @@ export function apiRouter(config: Config, redisClient: RedisClient) {
 
   // CSRF checks apply to all the API endpoints that frontend uses
   router.use(csrf)
+
+  // Ahead of the citizen proxy, which would forward it to the service, and ahead of the
+  // bearer-token middleware, which would make it cost a token validation for nothing
+  router.get('/citizen/public/api-manifest', citizenApiManifest)
 
   router.use('/citizen', citizenSessions.middleware)
 
