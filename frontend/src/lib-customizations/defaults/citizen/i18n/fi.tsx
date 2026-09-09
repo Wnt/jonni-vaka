@@ -8,6 +8,7 @@ import React from 'react'
 import type FiniteDateRange from 'lib-common/finite-date-range'
 import type { ApplicationType } from 'lib-common/generated/api-types/application'
 import type { EmailVerification } from 'lib-common/generated/api-types/pis'
+import type { CitizenApiScope } from 'lib-common/generated/api-types/shared'
 import type LocalDate from 'lib-common/local-date'
 import { formatPersonName } from 'lib-common/names'
 import ExternalLink from 'lib-components/atoms/ExternalLink'
@@ -32,6 +33,21 @@ const componentTranslations: ComponentTranslations = {
 
 const yes = 'Kyllä'
 const no = 'Ei'
+
+/** A missing label is a compile error: every grantable scope must have one. */
+const apiTokenScopeLabels: Record<CitizenApiScope, string> = {
+  PERSONAL_DATA_READ: 'Omat tiedot',
+  CHILDREN_READ: 'Lasten tiedot',
+  CALENDAR_READ: 'Kalenteri',
+  RESERVATIONS_READ: 'Läsnäolovaraukset',
+  ABSENCES_READ: 'Poissaolohakemukset',
+  HOLIDAY_PERIODS_READ: 'Loma-ajat ja lomakyselyt',
+  NOTIFICATIONS_READ: 'Ilmoitukset',
+  NOTIFICATIONS_DISMISS: 'Ilmoitusten kuittaaminen',
+  MESSAGES_READ: 'Viestit',
+  MESSAGES_MARK_READ: 'Viestien merkitseminen luetuiksi',
+  ATTACHMENTS_READ: 'Liitetiedostot'
+}
 
 export default {
   common: {
@@ -2301,6 +2317,80 @@ export default {
       limitError:
         'Voit lisätä enintään 10 pääsyavainta. Poista jokin pääsyavain ennen uuden lisäämistä.',
       addError: 'Pääsyavaimen lisääminen ei onnistunut. Yritä uudelleen.'
+    },
+    apiTokensSection: {
+      title: 'Sovellusavaimet',
+      description:
+        'Sovellusavaimella voit antaa käyttämällesi ohjelmalle rajatun oikeuden käsitellä eVaka-tietojasi puolestasi ilman, että luovutat sille eVaka-tunnuksiasi. Avain toimii vain valitsemillasi oikeuksilla, se vanhenee itsestään ja voit poistaa sen milloin tahansa.',
+      empty:
+        'Sinulla ei ole yhtään sovellusavainta. Tarvitset avaimen vain, jos käytät eVakaa jonkin muun ohjelman kautta.',
+      strongAuthRequired: 'Kirjaudu vahvasti hallitaksesi sovellusavaimia',
+      createToken: 'Luo uusi sovellusavain',
+      limitReached: (max: number) =>
+        `Sinulla voi olla enintään ${max} sovellusavainta. Poista jokin avain ennen uuden luomista.`,
+      created: 'Luotu',
+      expires: 'Voimassa',
+      expired: 'Vanhentunut',
+      lastUsed: 'Viimeksi käytetty',
+      neverUsed: 'Ei koskaan',
+      permissions: 'Oikeudet',
+      access: {
+        read: 'vain luku',
+        write: 'luku ja muokkaus'
+      },
+      scopes: apiTokenScopeLabels,
+      createModal: {
+        title: 'Luo uusi sovellusavain',
+        info: 'Anna avaimelle nimi, valitse kuinka kauan se on voimassa ja rastita ne tiedot, joihin ohjelma saa pääsyn. Valitse mahdollisimman vähän oikeuksia: avain pääsee vain siihen, minkä valitset. Kun tiedot siirtyvät ohjelmalle, ne eivät enää ole kunnan vastuulla: mihin ne tallentuvat, käytetäänkö niitä esimerkiksi pilvipalvelussa tai tekoälyavustimessa ja kuka niitä voi lukea, on ohjelman ja sinun asiasi.',
+        nameLabel: 'Sovellusavaimen nimi',
+        namePlaceholder: 'Esim. kalenterisovellus',
+        nameInfo:
+          'Nimi näkyy vain sinulle. Sen avulla tunnistat, mikä ohjelma avainta käyttää.',
+        expiryLabel: 'Voimassaoloaika',
+        expiryInfo:
+          'Avain lakkaa toimimasta automaattisesti, kun voimassaoloaika päättyy. Voit luoda uuden avaimen milloin tahansa.',
+        expiryOptions: {
+          days30: '30 päivää',
+          days90: '90 päivää',
+          days180: '180 päivää'
+        },
+        scopesLabel: 'Oikeudet',
+        scopesInfo:
+          'Luku tarkoittaa, että ohjelma näkee tiedot. Muokkaus-merkinnällä varustettu oikeus tarkoittaa, että ohjelma voi myös tehdä muutoksia puolestasi.',
+        silencesNotificationWarning:
+          'Jos ohjelma merkitsee viestin luetuksi lukiessaan sen, et saa siitä enää ilmoitusta sähköpostiin etkä näe lukematon-merkintää. Ne ovat ainoat tavat, joilla huomaat uuden viestin saapuneen.',
+        familyDataWarningTitle: 'Ohjelma näkee myös toisen huoltajan tietoja',
+        familyDataWarning:
+          'eVakassa lapsen molemmat huoltajat ovat samassa viestiketjussa, joten ohjelma näkee myös toisen huoltajan viestit ja nimen. Myös poissaolohakemuksista näkyy, kuka on ne tehnyt, ja läsnäolovaraukset ja lomavastaukset voivat olla toisen huoltajan tekemiä. Viestien, poissaolohakemusten ja kalenterimerkintöjen vapaa teksti voi sisältää mitä tahansa kirjoittaja on halunnut kertoa, myös tietoja lapsen terveydestä. Toiselle huoltajalle kerrotaan, kun luot tämän avaimen.',
+        writeBadge: 'Muokkaus',
+        presets: {
+          calendar: 'Kalenteri',
+          messages: 'Viestit',
+          custom: 'Oma valinta'
+        },
+        selectAllRead: 'Valitse kaikki lukuoikeudet',
+        noScopesSelected: 'Valitse vähintään yksi oikeus.',
+        writeWarningTitle: 'Olet antamassa muokkausoikeuksia',
+        writeWarning:
+          'Muokkausoikeudella ohjelma voi toimia eVakassa sinun nimissäsi: se voi esimerkiksi tehdä ja perua varauksia, ilmoittaa poissaoloja ja lähettää viestejä henkilökunnalle. Anna muokkausoikeus vain ohjelmalle, johon luotat.',
+        create: 'Luo sovellusavain'
+      },
+      createdModal: {
+        title: 'Sovellusavain luotu',
+        warningTitle: 'Kopioi avain nyt talteen',
+        warning:
+          'Tämä on ainoa kerta, kun avain näytetään. Kun suljet tämän ikkunan, avainta ei voi enää katsoa eikä palauttaa. Säilytä se turvallisesti äläkä jaa sitä kenellekään: avain toimii kuin salasana.',
+        tokenLabel: 'Sovellusavain',
+        copy: 'Kopioi leikepöydälle',
+        copied: 'Kopioitu',
+        usage:
+          'Anna avain sille ohjelmalle, jota varten loit sen. Jos avain joutuu vääriin käsiin, poista se heti tältä sivulta.',
+        close: 'Olen tallentanut avaimen'
+      },
+      revoke: 'Poista sovellusavain',
+      revokeConfirmTitle: 'Poistetaanko sovellusavain?',
+      revokeConfirmText: (name: string) =>
+        `Sovellusavain "${name}" lakkaa toimimasta heti. Sitä käyttävä ohjelma ei enää pääse tietoihisi, ennen kuin annat sille uuden avaimen. Poistoa ei voi perua.`
     },
     notificationsSection: {
       title: 'Ilmoitukset',

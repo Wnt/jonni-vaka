@@ -7,6 +7,7 @@ import React from 'react'
 
 import type FiniteDateRange from 'lib-common/finite-date-range'
 import type { EmailVerification } from 'lib-common/generated/api-types/pis'
+import type { CitizenApiScope } from 'lib-common/generated/api-types/shared'
 import type LocalDate from 'lib-common/local-date'
 import { formatPersonName } from 'lib-common/names'
 import ExternalLink from 'lib-components/atoms/ExternalLink'
@@ -33,6 +34,21 @@ const componentTranslations: ComponentTranslations = {
       'Content... Note! Do not enter sensitive information here.',
     messagePlaceholderSensitiveThread: 'Content...'
   }
+}
+
+/** A missing label is a compile error: every grantable scope must have one. */
+const apiTokenScopeLabels: Record<CitizenApiScope, string> = {
+  PERSONAL_DATA_READ: 'My details',
+  CHILDREN_READ: 'Children details',
+  CALENDAR_READ: 'Calendar',
+  RESERVATIONS_READ: 'Attendance reservations',
+  ABSENCES_READ: 'Absence applications',
+  HOLIDAY_PERIODS_READ: 'Holiday periods and holiday questionnaires',
+  NOTIFICATIONS_READ: 'Notifications',
+  NOTIFICATIONS_DISMISS: 'Dismissing notifications',
+  MESSAGES_READ: 'Messages',
+  MESSAGES_MARK_READ: 'Marking messages as read',
+  ATTACHMENTS_READ: 'Attachments'
 }
 
 const en: Translations = {
@@ -2030,6 +2046,82 @@ const en: Translations = {
       limitError:
         'You can add at most 10 passkeys. Delete a passkey before adding a new one.',
       addError: 'Adding the passkey failed. Please try again.'
+    },
+    apiTokensSection: {
+      title: 'Application keys',
+      description:
+        'An application key lets you give a program a limited right to handle your eVaka data on your behalf, without handing over your eVaka credentials. The key only works with the permissions you choose, it expires on its own, and you can delete it at any time.',
+      empty:
+        'You have no application keys. You only need a key if you use eVaka through another program.',
+      strongAuthRequired:
+        'Log in with strong authentication to manage application keys',
+      createToken: 'Create a new application key',
+      limitReached: (max: number) =>
+        `You can have at most ${max} application keys. Delete a key before creating a new one.`,
+      created: 'Created',
+      expires: 'Valid until',
+      expired: 'Expired',
+      lastUsed: 'Last used',
+      neverUsed: 'Never',
+      permissions: 'Permissions',
+      access: {
+        read: 'read only',
+        write: 'read and write'
+      },
+      scopes: apiTokenScopeLabels,
+      createModal: {
+        title: 'Create a new application key',
+        info: "Give the key a name, choose how long it is valid, and tick the data the program may access. Choose as few permissions as possible: the key can only reach what you select. Once the data reaches the program, it is no longer the municipality's responsibility: where it is stored, whether it is used in, say, a cloud service or an AI assistant, and who can read it are the program's business and yours.",
+        nameLabel: 'Application key name',
+        namePlaceholder: 'E.g. calendar app',
+        nameInfo:
+          'The name is only visible to you. It helps you recognise which program uses the key.',
+        expiryLabel: 'Validity period',
+        expiryInfo:
+          'The key stops working automatically when the validity period ends. You can create a new key at any time.',
+        expiryOptions: {
+          days30: '30 days',
+          days90: '90 days',
+          days180: '180 days'
+        },
+        scopesLabel: 'Permissions',
+        scopesInfo:
+          'Read means the program can see the data. A permission marked Write means the program can also make changes on your behalf.',
+        silencesNotificationWarning:
+          'If the program marks a message as read while reading it, you will no longer get an email notification about it, and no unread marker will show. Those are the only ways you notice that a new message has arrived.',
+        familyDataWarningTitle:
+          "The program also sees the other guardian's information",
+        familyDataWarning:
+          "In eVaka, both of a child's guardians are in the same message thread, so the program also sees the other guardian's messages and name. Absence applications also show who submitted them, and attendance reservations and holiday answers may have been made by the other guardian. The free text in messages, absence applications and calendar entries can contain anything the writer chose to include, including information about the child's health. The other guardian will be told when you create this key.",
+        writeBadge: 'Write',
+        presets: {
+          calendar: 'Calendar',
+          messages: 'Messages',
+          custom: 'Custom'
+        },
+        selectAllRead: 'Select all read permissions',
+        noScopesSelected: 'Select at least one permission.',
+        writeWarningTitle: 'You are granting write permissions',
+        writeWarning:
+          'With write permission the program can act in eVaka in your name: it can, for example, make and cancel reservations, report absences and send messages to staff. Only grant write permission to a program you trust.',
+        create: 'Create application key'
+      },
+      createdModal: {
+        title: 'Application key created',
+        warningTitle: 'Copy the key now',
+        warning:
+          'This is the only time the key is shown. Once you close this window, the key can no longer be viewed or recovered. Store it securely and do not share it with anyone: the key works like a password.',
+        tokenLabel: 'Application key',
+        copy: 'Copy to clipboard',
+        copied: 'Copied',
+        usage:
+          'Give the key to the program you created it for. If the key ends up in the wrong hands, delete it on this page immediately.',
+        close: 'I have saved the key'
+      },
+      revoke: 'Delete application key',
+      revokeConfirmTitle: 'Delete the application key?',
+      revokeConfirmText: (name: string) =>
+        `The application key "${name}" stops working immediately. The program using it can no longer access your data until you give it a new key. Deletion cannot be undone.`
     },
     notificationsSection: {
       title: 'Notifications',

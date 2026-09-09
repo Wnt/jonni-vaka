@@ -7,6 +7,7 @@ import React from 'react'
 
 import type FiniteDateRange from 'lib-common/finite-date-range'
 import type { EmailVerification } from 'lib-common/generated/api-types/pis'
+import type { CitizenApiScope } from 'lib-common/generated/api-types/shared'
 import type LocalDate from 'lib-common/local-date'
 import { formatPersonName } from 'lib-common/names'
 import ExternalLink from 'lib-components/atoms/ExternalLink'
@@ -32,6 +33,21 @@ const componentTranslations: ComponentTranslations = {
 
 const yes = 'Ja'
 const no = 'Nej'
+
+/** A missing label is a compile error: every grantable scope must have one. */
+const apiTokenScopeLabels: Record<CitizenApiScope, string> = {
+  PERSONAL_DATA_READ: 'Mina uppgifter',
+  CHILDREN_READ: 'Barnens uppgifter',
+  CALENDAR_READ: 'Kalender',
+  RESERVATIONS_READ: 'Närvaroreservationer',
+  ABSENCES_READ: 'Frånvaroansökningar',
+  HOLIDAY_PERIODS_READ: 'Semesterperioder och semesterenkäter',
+  NOTIFICATIONS_READ: 'Aviseringar',
+  NOTIFICATIONS_DISMISS: 'Kvittera aviseringar',
+  MESSAGES_READ: 'Meddelanden',
+  MESSAGES_MARK_READ: 'Markera meddelanden som lästa',
+  ATTACHMENTS_READ: 'Bilagor'
+}
 
 const sv: Translations = {
   common: {
@@ -2290,6 +2306,82 @@ const sv: Translations = {
       limitError:
         'Du kan lägga till högst 10 inloggningsnycklar. Ta bort en inloggningsnyckel innan du lägger till en ny.',
       addError: 'Det gick inte att lägga till inloggningsnyckeln. Försök igen.'
+    },
+    apiTokensSection: {
+      title: 'Appnycklar',
+      description:
+        'Med en appnyckel kan du ge ett program en begränsad rätt att hantera dina uppgifter i eVaka för din räkning, utan att du lämnar ut dina eVaka-inloggningsuppgifter. Nyckeln fungerar bara med de rättigheter du väljer, den upphör att gälla automatiskt och du kan ta bort den när som helst.',
+      empty:
+        'Du har inga appnycklar. Du behöver en nyckel bara om du använder eVaka via ett annat program.',
+      strongAuthRequired:
+        'Logga in med stark autentisering för att hantera appnycklar',
+      createToken: 'Skapa en ny appnyckel',
+      limitReached: (max: number) =>
+        `Du kan ha högst ${max} appnycklar. Ta bort en nyckel innan du skapar en ny.`,
+      created: 'Skapad',
+      expires: 'Giltig till',
+      expired: 'Upphörde',
+      lastUsed: 'Senast använd',
+      neverUsed: 'Aldrig',
+      permissions: 'Rättigheter',
+      access: {
+        read: 'endast läsning',
+        write: 'läsning och ändring'
+      },
+      scopes: apiTokenScopeLabels,
+      createModal: {
+        title: 'Skapa en ny appnyckel',
+        info: 'Ge nyckeln ett namn, välj hur länge den gäller och kryssa för de uppgifter som programmet får tillgång till. Välj så få rättigheter som möjligt: nyckeln når bara det du väljer. När uppgifterna når programmet är de inte längre kommunens ansvar: var de lagras, om de till exempel används i en molntjänst eller en AI-assistent och vem som kan läsa dem är programmets och din sak.',
+        nameLabel: 'Appnyckelns namn',
+        namePlaceholder: 'T.ex. kalenderapp',
+        nameInfo:
+          'Namnet syns bara för dig. Med hjälp av det känner du igen vilket program som använder nyckeln.',
+        expiryLabel: 'Giltighetstid',
+        expiryInfo:
+          'Nyckeln slutar fungera automatiskt när giltighetstiden går ut. Du kan skapa en ny nyckel när som helst.',
+        expiryOptions: {
+          days30: '30 dagar',
+          days90: '90 dagar',
+          days180: '180 dagar'
+        },
+        scopesLabel: 'Rättigheter',
+        scopesInfo:
+          'Läsning betyder att programmet ser uppgifterna. En rättighet märkt Ändring betyder att programmet också kan göra ändringar för din räkning.',
+        silencesNotificationWarning:
+          'Om programmet markerar ett meddelande som läst när det läser det, får du ingen avisering om det per e-post och ingen olästmarkering visas längre. Det är de enda sätten du märker att ett nytt meddelande har kommit.',
+        familyDataWarningTitle:
+          'Programmet ser också den andra vårdnadshavarens uppgifter',
+        familyDataWarning:
+          'I eVaka finns barnets båda vårdnadshavare i samma meddelandetråd, så programmet ser också den andra vårdnadshavarens meddelanden och namn. Även frånvaroansökningar visar vem som gjort dem, och närvaroreservationer och semestersvar kan vara gjorda av den andra vårdnadshavaren. Den fria texten i meddelanden, frånvaroansökningar och kalenteranteckningar kan innehålla vad som helst som skribenten valt att skriva, även uppgifter om barnets hälsa. Den andra vårdnadshavaren informeras när du skapar den här nyckeln.',
+        writeBadge: 'Ändring',
+        presets: {
+          calendar: 'Kalender',
+          messages: 'Meddelanden',
+          custom: 'Eget val'
+        },
+        selectAllRead: 'Välj alla läsrättigheter',
+        noScopesSelected: 'Välj minst en rättighet.',
+        writeWarningTitle: 'Du håller på att ge ändringsrättigheter',
+        writeWarning:
+          'Med ändringsrättighet kan programmet agera i eVaka i ditt namn: det kan till exempel göra och annullera reservationer, anmäla frånvaro och skicka meddelanden till personalen. Ge ändringsrättighet bara till ett program som du litar på.',
+        create: 'Skapa appnyckel'
+      },
+      createdModal: {
+        title: 'Appnyckeln har skapats',
+        warningTitle: 'Kopiera nyckeln nu',
+        warning:
+          'Det här är enda gången nyckeln visas. När du stänger det här fönstret kan nyckeln inte längre visas eller återskapas. Förvara den säkert och dela den inte med någon: nyckeln fungerar som ett lösenord.',
+        tokenLabel: 'Appnyckel',
+        copy: 'Kopiera till urklipp',
+        copied: 'Kopierad',
+        usage:
+          'Ge nyckeln till det program som du skapade den för. Om nyckeln hamnar i fel händer, ta bort den genast på den här sidan.',
+        close: 'Jag har sparat nyckeln'
+      },
+      revoke: 'Ta bort appnyckeln',
+      revokeConfirmTitle: 'Ta bort appnyckeln?',
+      revokeConfirmText: (name: string) =>
+        `Appnyckeln "${name}" slutar fungera omedelbart. Programmet som använder den kommer inte längre åt dina uppgifter förrän du ger det en ny nyckel. Borttagningen kan inte ångras.`
     },
     notificationsSection: {
       title: 'Aviseringar',

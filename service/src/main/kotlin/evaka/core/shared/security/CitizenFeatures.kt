@@ -9,4 +9,5 @@ data class CitizenFeatures(
     val composeNewMessage: Boolean,
     val reservations: Boolean,
     val childDocumentation: Boolean,
+    val apiTokens: Boolean,
 )

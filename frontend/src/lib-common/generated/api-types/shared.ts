@@ -80,6 +80,7 @@ export type CitizenAuthLevel =
 * Generated from evaka.core.shared.security.CitizenFeatures
 */
 export interface CitizenFeatures {
+  apiTokens: boolean
   childDocumentation: boolean
   composeNewMessage: boolean
   messages: boolean

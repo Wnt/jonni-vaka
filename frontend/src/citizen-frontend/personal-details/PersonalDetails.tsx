@@ -29,6 +29,7 @@ import { useTranslation } from '../localization'
 import { headerHeightMobile } from '../navigation/const'
 import useTitle from '../useTitle'
 
+import ApiTokensSection from './ApiTokensSection'
 import ContactDetailsSection from './ContactDetailsSection'
 import FamilySizeSection from './FamilySizeSection'
 import HomeScreenSection from './HomeScreenSection'
@@ -289,6 +290,21 @@ export default React.memo(function PersonalDetails() {
               )
           )}
         </ScrollTargetArea>
+
+        {renderResult(user, (user) =>
+          user ? (
+            user.accessibleFeatures.apiTokens ? (
+              <>
+                <Gap $size="s" />
+                <ContentArea $opaque $paddingVertical="m">
+                  <ApiTokensSection user={user} />
+                </ContentArea>
+              </>
+            ) : null
+          ) : (
+            <Redirect replace to="/" />
+          )
+        )}
 
         <HomeScreenSection ref={homeScreenSection} />
 
