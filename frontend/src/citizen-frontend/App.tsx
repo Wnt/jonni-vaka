@@ -77,7 +77,6 @@ export function App({ children }: { children: React.ReactNode }) {
                     <Content>{children}</Content>
                     <GlobalDialog />
                     <LoginErrorModal />
-                    <div id="modal-container" />
                     <div id="datepicker-container" />
                     <div id="tooltip-container" />
                   </MessageDraftsProvider>
